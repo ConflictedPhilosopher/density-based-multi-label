@@ -76,9 +76,6 @@ def Com_Cal(labels, i, j):
     if method == 'cosine':
         for i in range(label_count):
             for j in range(i, label_count):
-                temp = np.dot(labels.iloc[:, i], labels.iloc[:, j])
-                temp2 = np.linalg.norm(labels.iloc[:, i])
-                temp3 = np.linalg.norm(labels.iloc[:, j])
                 C[i, j] = np.dot(labels.iloc[:, i], labels.iloc[:, j])/ (np.linalg.norm(labels.iloc[:, i]) * np.linalg.norm(labels.iloc[:, j]))
     return C
 
