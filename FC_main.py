@@ -21,7 +21,7 @@ def Input():
     DATA_HEADER = "flags"
     VALID_DATA_HEADER = DATA_HEADER + "-test"
     TRAIN_DATA_HEADER = DATA_HEADER + "-train"
-    DATA_FOLDER = "C:/Users/Xuyang/Desktop/Fall-2019-PhD-Xuyang/Test_Code"
+    DATA_FOLDER = os.curdir
     NO_ATTRIBUTES = 19
 
     trainDataCSV = os.path.join(DATA_FOLDER, TRAIN_DATA_HEADER + "-csv.csv")
@@ -68,9 +68,19 @@ labels: class labelsets n-by-c matrix (n: number of samples; c: number of classe
 i: the ith class
 j: the jth class
 Output: a c-by-c similarity matrix 
-
 """
-
+def Com_Cal(labels, i, j):
+    method = 'cosine'
+    label_count = len(labels.columns)
+    C = np.zeros((label_count, label_count))
+    if method == 'cosine':
+        for i in range(label_count):
+            for j in range(i, label_count):
+                temp = np.dot(labels.iloc[:, i], labels.iloc[:, j])
+                temp2 = np.linalg.norm(labels.iloc[:, i])
+                temp3 = np.linalg.norm(labels.iloc[:, j])
+                C[i, j] = np.dot(labels.iloc[:, i], labels.iloc[:, j])/ (np.linalg.norm(labels.iloc[:, i]) * np.linalg.norm(labels.iloc[:, j]))
+        return C
 
 def fitness_cal(DisC,Nc,label,StdF,gamma):
     fitness = np.zeros(np.shape(label)[1])
@@ -83,7 +93,6 @@ def fitness_cal(DisC,Nc,label,StdF,gamma):
                 TempSum = TempSum + (math.exp(- (D**2) / StdF))**gamma
         fitness[i] = TempSum
     return fitness
-
 
 def Pseduo_Peaks(DisC,Dist,label,fitness,StdF,gamma):
 
@@ -132,7 +141,6 @@ def NeighborSearch(DisC, label, P_indice, marked, radius):
     Indices = Cluster
     
     return Indices
-
 
 def Sharing(fitness, indices):
     newfitness = fitness
