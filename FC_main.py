@@ -80,7 +80,7 @@ def Com_Cal(labels, i, j):
                 temp2 = np.linalg.norm(labels.iloc[:, i])
                 temp3 = np.linalg.norm(labels.iloc[:, j])
                 C[i, j] = np.dot(labels.iloc[:, i], labels.iloc[:, j])/ (np.linalg.norm(labels.iloc[:, i]) * np.linalg.norm(labels.iloc[:, j]))
-        return C
+    return C
 
 def fitness_cal(DisC,Nc,label,StdF,gamma):
     fitness = np.zeros(np.shape(label)[1])
