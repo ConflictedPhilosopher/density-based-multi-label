@@ -48,15 +48,9 @@ def Input():
 
 def Feature_Dist(label,Nc):
     Dist = []
-    DisC = np.zeros((Nc,Nc))
-    
-    for i in range(Nc):
-        for j in range(i,Nc):
-            DisC[i,j] = Com_Cal(label, i, j)
-            DisC[j,i] = DisC[i, j]
-            Dist.append(DisC[i, j])
-            
-    return DisC,Dist
+    DisC = Com_Cal(label)
+
+    return DisC, Dist
 
 """ 
 Function Com_Cal
@@ -69,7 +63,7 @@ i: the ith class
 j: the jth class
 Output: a c-by-c similarity matrix 
 """
-def Com_Cal(labels, i, j):
+def Com_Cal(labels):
     method = 'cosine'
     label_count = len(labels.columns)
     C = np.zeros((label_count, label_count))
