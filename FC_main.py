@@ -48,30 +48,38 @@ def Input():
 
 def Feature_Dist(label,Nc):
     Dist = []
-    DisC = Com_Cal(label)
+    DisC,Dist = Com_Cal(label)
+#    DisC = DisC1.todense()
 
     return DisC, Dist
 
-""" 
+"""
+
 Function Com_Cal
 
-Description: Write a similarity calculation function to compute the correlation among 
+Description: Write a similarity calculation function to compute the correlation among
 class labels
-Input: 
+Input:
 labels: class labelsets n-by-c matrix (n: number of samples; c: number of classes)
 i: the ith class
 j: the jth class
-Output: a c-by-c similarity matrix 
+Output: a c-by-c similarity matrix
 """
 def Com_Cal(labels):
     method = 'cosine'
     label_count = len(labels.columns)
     C = np.zeros((label_count, label_count))
+    D = []
     if method == 'cosine':
         for i in range(label_count):
             for j in range(i, label_count):
-                C[i, j] = np.dot(labels.iloc[:, i], labels.iloc[:, j])/ (np.linalg.norm(labels.iloc[:, i]) * np.linalg.norm(labels.iloc[:, j]))
-    return C
+                if j == i:
+                    C[i,j] = 0
+                else:
+                    C[i, j] = np.dot(labels.iloc[:, i], labels.iloc[:, j])/ (np.linalg.norm(labels.iloc[:, i]) * np.linalg.norm(labels.iloc[:, j]))
+                C[j, i] = C[i, j]
+                D.append(C[i,j])
+    return C,D
 
 def fitness_cal(DisC,Nc,label,StdF,gamma):
     fitness = np.zeros(np.shape(label)[1])
@@ -88,7 +96,7 @@ def fitness_cal(DisC,Nc,label,StdF,gamma):
 def Pseduo_Peaks(DisC,Dist,label,fitness,StdF,gamma):
 
     # Search Stage of Pseduo Clusters at the temporal sample space
-    NeiRad = 0.25*np.max(Dist)
+    NeiRad = 0.45*np.max(Dist)
     i = 0
     marked = []
     C_Indices = np.arange(1, np.shape(label)[1]+1) # The pseduo Cluster label of features
@@ -97,28 +105,30 @@ def Pseduo_Peaks(DisC,Dist,label,fitness,StdF,gamma):
     co = []
     F = fitness
     while True:
-        
+
         PeakIndices.append(np.argmax(F))
         Pfitness.append(np.max(F))
-    
+
         indices = NeighborSearch(DisC, label, PeakIndices[i], marked, NeiRad)
-        
+
         C_Indices[indices] = PeakIndices[i]
         if len(indices) == 0:
             indices=[PeakIndices[i]]
-        
-        co.append(len(indices)) # Number of samples belong to the current 
+
+        co.append(len(indices)) # Number of samples belong to the current
     # identified pseduo cluster
         marked = np.concatenate(([marked,indices]))
-  
+
         # Fitness Proportionate Sharing
-        F = Sharing(F, indices) 
-        
+        tempF = Sharing(F, indices)
+
+        F = tempF
+
         # Check whether all of samples has been assigned a pseduo cluster label
         if np.sum(co) >= (len(F)):
-            
+
             break
-        
+
         i=i+1 # Expand the size of the pseduo cluster set by 1
     return PeakIndices,Pfitness,C_Indices
 
@@ -130,7 +140,7 @@ def NeighborSearch(DisC, label, P_indice, marked, radius):
             if Dist <= radius:
                 Cluster.append(i)
     Indices = Cluster
-    
+
     return Indices
 
 def Sharing(fitness, indices):
@@ -140,11 +150,11 @@ def Sharing(fitness, indices):
         sum1 = sum1 + fitness[indices[j]]
     for th in range(len(indices)):
             newfitness[indices[th]] = fitness[indices[th]] / (1+sum1)
-            
+
     return newfitness
-    
+
 def Pseduo_Evolve(DisC, PeakIndices, PseDuoF, C_Indices, data, fitness, StdF, gamma):
-    
+
     # Initialize the indices of Historical Pseduo Clusters and their fitness values
     HistCluster = PeakIndices
     HistClusterF = PseDuoF
@@ -154,30 +164,30 @@ def Pseduo_Evolve(DisC, PeakIndices, PseDuoF, C_Indices, data, fitness, StdF, ga
         # Check for the stablization of clutser evolution and exit the loop
         if len(np.unique(Cluster)) == len(np.unique(HistCluster)):
             break
-    
+
         # Update the feature indices of historical pseduo feature clusters and
         # their corresponding fitness values
-    
+
         HistCluster=Cluster
         HistClusterF=Cfitness
         C_Indices = F_Indices
-    # Compute final evolved feature cluster information 
+    # Compute final evolved feature cluster information
     FCluster = Cluster
     Ffitness = Cfitness
     C_Indices = F_Indices
-    
+
     return FCluster, Ffitness, C_Indices
 #----------------------------------------------------------------------------------------------------------
 def Pseduo_Merge(DisC, PeakIndices, PseDuoF, C_Indices, data, fitness, StdF, gamma):
-    # Initialize the pseduo feature clusters lables for all features 
+    # Initialize the pseduo feature clusters lables for all features
     F_Indices = C_Indices
     ML = [] # Initialize the merge list as empty
-    marked = [] #List of checked Pseduo Clusters Indices 
-    Unmarked = [] # List of unmerged Pseduo Clusters Indices 
+    marked = [] #List of checked Pseduo Clusters Indices
+    Unmarked = [] # List of unmerged Pseduo Clusters Indices
     for i in range(len(PeakIndices)):
             M = 1 # Set the merge flag as default zero
             MinDist = math.inf # Set the default Minimum distance between two feature clusters as infinite
-            MinIndice = 0 # Set the default Neighboring feature cluster indices as zero
+            MinIndice = -1 # Set the default Neighboring feature cluster indices as zero
             # Check the current Pseduo Feature Cluster has been evaluated or not
             if PeakIndices[i] not in marked:
                 for j in range(len(PeakIndices)):
@@ -187,29 +197,31 @@ def Pseduo_Merge(DisC, PeakIndices, PseDuoF, C_Indices, data, fitness, StdF, gam
                             if MinDist > D:
                                 MinDist = D
                                 MinIndice = j
-                if MinIndice != 0:
+                if MinIndice>=0:
                     # Current feature pseduo cluster under check
                     Current = PeakIndices[i]
                     CurrentFit = PseDuoF[i]
                     # Neighboring feature pseduo cluster of the current checked cluster
                     Neighbor = PeakIndices[MinIndice]
                     NeighborFit = PseDuoF[MinIndice]
-                    
-                    # A function to identify the bounady feature instance between two 
+
+                    # A function to identify the bounady feature instance between two
                     # neighboring pseduo feature clusters
                     BP=Boundary_Points(DisC, F_Indices,data, PeakIndices[i], PeakIndices[MinIndice])
                     BPF=fitness[BP]
                     if BPF<1*min(CurrentFit,NeighborFit):
                         M=0 # Change the Merge flag
-                    
+
                     if M == 1:
                         ML.append([PeakIndices[i],PeakIndices[MinIndice]])
                         marked.append(PeakIndices[i])
                         marked.append(PeakIndices[MinIndice])
                     else:
                         Unmarked.append(PeakIndices[i])
+                else:
+                    Unmarked.append(PeakIndices[i])
     NewPI = []
-    # Update the pseduo feature clusters list with the obtained mergelist 
+    # Update the pseduo feature clusters list with the obtained mergelist
     for m in range(np.shape(ML)[0]):
         # print(ML[m][0],ML[m][1])
         if fitness[ML[m][0]] > fitness[ML[m][1]]:
@@ -218,48 +230,48 @@ def Pseduo_Merge(DisC, PeakIndices, PseDuoF, C_Indices, data, fitness, StdF, gam
         else:
             NewPI.append(ML[m][1])
             F_Indices[C_Indices==ML[m][0]] = ML[m][1]
-    # Update the pseduo feature clusters list with pseduo clusters that have not appeared in the merge list 
+    # Update the pseduo feature clusters list with pseduo clusters that have not appeared in the merge list
     for n in range(len(PeakIndices)):
         if PeakIndices[n] in Unmarked:
             NewPI.append(PeakIndices[n])
 
     # Updated pseduo feature clusters information after merging
-    FCluster = NewPI
+    FCluster = np.unique(NewPI)
     Ffitness = fitness[FCluster]
     return FCluster, Ffitness, F_Indices
 
 def Boundary_Points(DisC, F_Indices, data, Current, Neighbor):
-    
+
     [N, dim] = np.shape(data)
     TempCluster1 = np.where(F_Indices == Current)
     TempCluster2 = np.where(F_Indices == Neighbor)
-    
+
     TempCluster = np.append(TempCluster1,TempCluster2)
-    
+
     D = []
-    
+
     for i in range(len(TempCluster)):
         D1 = DisC[TempCluster[i], Current]
         D2 = DisC[TempCluster[i], Neighbor]
-        
+
         D.append(abs(D1 - D2))
-    
+
     FI = np.argmin(D)
     BD = TempCluster[FI]
-    
+
     return BD
 
-   
-#--------------------------------------------------------------------------------------------------------------  
+
+#--------------------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
-    
-    label = Input()   
+
+    label = Input()
     [N,Nc] = np.shape(label)
 
     [DisC,Dist] =  Feature_Dist(label,Nc)
     StdF = max(Dist)
     gamma = 5
-    
+
     fitness = fitness_cal(DisC,Nc,label,StdF,gamma)
     oldfitness = np.copy(fitness)
 
@@ -274,7 +286,6 @@ if __name__ == '__main__':
     [FCluster,Ffitness,C_Indices] = Pseduo_Evolve(DisC, PseDuo, PseDuoF, C_Indices, label, fitness, StdF, gamma)
 
     SF = FCluster
-    
+
     end = time.time()
     print('The total time in seconds:', start-end)
-    
