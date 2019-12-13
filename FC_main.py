@@ -183,7 +183,7 @@ def Pseduo_Merge(DisC, PeakIndices, PseDuoF, C_Indices, data, fitness, StdF, gam
     for i in range(len(PeakIndices)):
             M = 1 # Set the merge flag as default zero
             MinDist = math.inf # Set the default Minimum distance between two feature clusters as infinite
-            MinIndice = -1 # Set the default Neighboring feature cluster indices as zero
+            MinIndice = -1 # Set the default Neighboring feature cluster indices as negative
             # Check the current Pseduo Feature Cluster has been evaluated or not
             if PeakIndices[i] not in marked:
                 for j in range(len(PeakIndices)):
@@ -193,7 +193,7 @@ def Pseduo_Merge(DisC, PeakIndices, PseDuoF, C_Indices, data, fitness, StdF, gam
                             if MinDist > D:
                                 MinDist = D
                                 MinIndice = j
-                if MinIndice>=0:
+                if MinIndice>=0: # check whether there is a closest indices or not
                     # Current feature pseduo cluster under check
                     Current = PeakIndices[i]
                     CurrentFit = PseDuoF[i]
