@@ -49,12 +49,11 @@ def Input():
 def Feature_Dist(label,Nc):
     Dist = []
     DisC,Dist = Com_Cal(label)
-#    DisC = DisC1.todense()
+    
 
     return DisC, Dist
 
 """
-
 Function Com_Cal
 
 Description: Write a similarity calculation function to compute the correlation among
@@ -73,10 +72,7 @@ def Com_Cal(labels):
     if method == 'cosine':
         for i in range(label_count):
             for j in range(i, label_count):
-                if j == i:
-                    C[i,j] = 0
-                else:
-                    C[i, j] = np.dot(labels.iloc[:, i], labels.iloc[:, j])/ (np.linalg.norm(labels.iloc[:, i]) * np.linalg.norm(labels.iloc[:, j]))
+                C[i, j] = np.dot(labels.iloc[:, i], labels.iloc[:, j])/ (np.linalg.norm(labels.iloc[:, i]) * np.linalg.norm(labels.iloc[:, j]))
                 C[j, i] = C[i, j]
                 D.append(C[i,j])
     return C,D
